@@ -1,6 +1,12 @@
 #!/bin/bash
 set -e
 
+# Valida se a senha foi fornecida
+if [ -z "${ROOT_PASSWORD}" ]; then
+  echo "[ERRO] ROOT_PASSWORD não definida! Defina a variável de ambiente antes de iniciar."
+  exit 1
+fi
+
 # Define a senha do root
 echo "root:${ROOT_PASSWORD}" | chpasswd
 
