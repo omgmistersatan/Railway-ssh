@@ -1,0 +1,30 @@
+services:
+  ssh-ngrok:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NGROK_AUTH_TOKEN: ${NGROK_AUTH_TOKEN}
+        ROOT_PASSWORD: ${ROOT_PASSWORD}
+    container_name: ssh-ngrok
+    restart: unless-stopped
+    privileged: true
+    ports:
+      - "22:22"
+      - "80:80"
+      - "443:443"
+      - "3306:3306"
+      - "8080:8080"
+      - "8888:8888"
+      - "5130-5135:5130-5135"
+    environment:
+      - NGROK_AUTH_TOKEN=${NGROK_AUTH_TOKEN}
+      - ROOT_PASSWORD=${ROOT_PASSWORD}
+    volumes:
+      - ssh_data:/etc/ssh
+    cap_add:
+      - NET_ADMIN
+      - SYS_PTRACE
+
+volumes:
+  ssh_data:
