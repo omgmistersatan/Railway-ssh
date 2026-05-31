@@ -1,40 +1,31 @@
-FROM debian:stable-slim
+FROM debian:bookworm-slim
 
-# Argumentos de build
-ARG NGROK_AUTH_TOKEN
-ARG ROOT_PASSWORD
+# Variáveis padrão (podem ser sobrescritas no runtime)
+ENV PORT=8080 \
+    USERNAME=admin \
+    PASSWORD=admin
 
-# Variáveis de ambiente
-ENV ROOT_PASSWORD=${ROOT_PASSWORD} \
-    NGROK_AUTH_TOKEN=${NGROK_AUTH_TOKEN} \
-    DEBIAN_FRONTEND=noninteractive
-
-# Atualiza e instala dependências em uma única camada
-RUN apt-get update -y && \
-    apt-get upgrade -y && \
+# Instala dependências
+RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        openssh-server \
-        wget \
-        unzip \
-        ca-certificates && \
+        wget curl git python3 python3-pip neofetch ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
-# Baixa e instala o ngrok
-RUN wget -q -O /tmp/ngrok.zip https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.zip && \
-    unzip /tmp/ngrok.zip -d /usr/local/bin/ && \
-    rm /tmp/ngrok.zip && \
-    chmod +x /usr/local/bin/ngrok
+# Instala ttyd
+RUN wget -qO /usr/local/bin/ttyd \
+    https://github.com/tsl0922/ttyd/releases/download/1.7.3/ttyd.x86_64 && \
+    chmod +x /usr/local/bin/ttyd
 
-# Configura o SSH
-RUN mkdir -p /run/sshd && \
-    sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
-    sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
-    echo "UseDNS no" >> /etc/ssh/sshd_config
+# Configuração do bash (feito em build, não runtime)
+RUN echo "neofetch" >> /root/.bashrc && \
+    echo "cd /root" >> /root/.bashrc && \
+    echo "export PS1='\[\033[01;31m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\\$ '" >> /root/.bashrc
 
-# Script de inicialização
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+# Garante root:root explicitamente
+USER root
 
-EXPOSE 22 80 443 3306 5130 5131 5132 5133 5134 5135 8080 8888
+# Porta padrão (fixa, já que variável não funciona aqui)
+EXPOSE 8080
 
-CMD ["/entrypoint.sh"]
+# Comando principal
+CMD ttyd -p ${PORT} -c ${USERNAME}:${PASSWORD} /bin/bash
